@@ -24,7 +24,7 @@ SECTIONS
 
 	/* Include debugging information in kernel memory */
 	.stab : {
-		PROVIDE(__STAB_BEGIN__ = .);
+		PROVIDE(__STAB_BEGIN__ = .); 
 		*(.stab);
 		PROVIDE(__STAB_END__ = .);
 		BYTE(0)		/* Force the linker to allocate space
