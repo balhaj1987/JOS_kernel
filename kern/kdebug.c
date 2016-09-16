@@ -3,6 +3,11 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 
+#include <inc/stdio.h>
+
+#include <kern/monitor.h>
+#include <kern/console.h>
+
 #include <kern/kdebug.h>
 
 extern const struct Stab __STAB_BEGIN__[];	// Beginning of stabs table
@@ -104,6 +109,7 @@ stab_binsearch(const struct Stab *stabs, int *region_left, int *region_right,
 int
 debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 {
+
 	const struct Stab *stabs, *stab_end;
 	const char *stabstr, *stabstr_end;
 	int lfile, rfile, lfun, rfun, lline, rline;
@@ -122,6 +128,7 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 		stab_end = __STAB_END__;
 		stabstr = __STABSTR_BEGIN__;
 		stabstr_end = __STABSTR_END__;
+        
 	} else {
 		// Can't search for user-level addresses yet!
   	        panic("User address");
@@ -139,6 +146,7 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	// Search the entire set of stabs for the source file (type N_SO).
 	lfile = 0;
 	rfile = (stab_end - stabs) - 1;
+
 	stab_binsearch(stabs, &lfile, &rfile, N_SO, addr);
 	if (lfile == 0)
 		return -1;
@@ -152,6 +160,8 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	if (lfun <= rfun) {
 		// stabs[lfun] points to the function name
 		// in the string table, but check bounds just in case.
+
+
 		if (stabs[lfun].n_strx < stabstr_end - stabstr)
 			info->eip_fn_name = stabstr + stabs[lfun].n_strx;
 		info->eip_fn_addr = stabs[lfun].n_value;
@@ -159,12 +169,17 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 		// Search within the function definition for the line number.
 		lline = lfun;
 		rline = rfun;
+
+                 
 	} else {
 		// Couldn't find function stab!  Maybe we're in an assembly
 		// file.  Search the whole file for the line number.
+
+
 		info->eip_fn_addr = addr;
 		lline = lfile;
 		rline = rfile;
+
 	}
 	// Ignore stuff after the colon.
 	info->eip_fn_namelen = strfind(info->eip_fn_name, ':') - info->eip_fn_name;
@@ -178,7 +193,23 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	//	There's a particular stabs type used for line numbers.
 	//	Look at the STABS documentation and <inc/stab.h> to find
 	//	which one.
-	// Your code here.
+	// your code here
+
+
+
+          
+
+ //////////////////////////////////////////////////////
+
+        
+	stab_binsearch(stabs, &lline, &rline, N_SLINE	, addr);
+         
+        info->eip_line = stabs[lline].n_value;
+
+
+///////////////////////////////////////////////////////
+
+
 
 
 	// Search backwards from the line number for the relevant filename
