@@ -25,6 +25,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+        { "backtrace", "Provides the backtrace",    mon_backtrace},
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -34,7 +35,6 @@ int
 mon_help(int argc, char **argv, struct Trapframe *tf)
 {
 	int i;
-
 	for (i = 0; i < NCOMMANDS; i++)
 		cprintf("%s - %s\n", commands[i].name, commands[i].desc);
 	return 0;
@@ -59,10 +59,75 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+	uint32_t ebpr;
+
+	uint32_t *temp;
+        uint32_t *ptr1;
+        uintptr_t address;
+	__asm __volatile("movl %%ebp,%0" : "=r" (ebpr));
+	struct Eipdebuginfo i;	
+                uint32_t *ptr = (uint32_t*)ebpr ;
+      
+	while(*ptr!=0)
+	{
+	
+	address = *(ptr+1);
+        
+	ptr1 = (uint32_t*) *ptr;
+        debuginfo_eip(address, &i);
+                 	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5), *(ptr1+6));
+
+
+      switch(i.eip_fn_narg) {
+         
+       case 0: 
+    	     cprintf("EBP :%08x  ,EIP %08x  ,args:  non \n",*ptr,*(ptr+1));
+       break; 
+
+
+         case 1:
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x \n",*ptr,*(ptr+1),*(ptr1+2));
+         break;
+
+
+        case 2:
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3));
+         break;
+
+
+         case 3:
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4));
+         break;
+
+
+
+         case 4:
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5));
+         break;
+
+
+
+       default: //5 or more
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5), *(ptr1+6));
+         break;
+
+        }      
+
+	temp = ptr;
+	ptr = (uint32_t*) *temp;
+
+            
+         cprintf("Source File : %s    ", i.eip_file);
+         cprintf("Line# : %d    ", i.eip_line);
+         cprintf("Func Name   : %s  ", i.eip_fn_name);
+         cprintf("number of arguments  : %d \n\n ", i.eip_fn_narg);    
+    
+	}	
+
+		      
+
 	return 0;
 }
-
 
 
 /***** Kernel monitor command interpreter *****/
