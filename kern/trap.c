@@ -9,6 +9,33 @@
 #include <kern/env.h>
 #include <kern/syscall.h>
 
+
+
+// declaring the handlers used in entry_trap.S
+    void int0 ();
+    void int1 ();
+    void int2 ();
+    void int3 ();
+    void int4 ();
+    void int5 ();
+    void int6 ();
+    void int7 ();
+    void int8 ();
+    void int9 ();
+    void int10 ();
+    void int11 ();
+    void int12 ();
+    void int13 ();
+    void int14 ();
+    void int15 ();
+    void int16 ();
+    void int17 ();
+    void int18 ();
+    void int19 ();
+    void int48 ();
+
+
+
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -20,8 +47,8 @@ static struct Trapframe *last_tf;
 /* Interrupt descriptor table.  (Must be built at run time because
  * shifted function addresses can't be represented in relocation records.)
  */
-struct Gatedesc idt[256] = { { 0 } };
-struct Pseudodesc idt_pd = {
+struct Gatedesc idt[256] = { { 0 } };     
+struct Pseudodesc idt_pd = {       
 	sizeof(idt) - 1, (uint32_t) idt
 };
 
@@ -63,8 +90,34 @@ void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
+	//extern struct Gatedesc idt []; 
+	//cprintf(" excnames[2] = %s \n", trapname(2)) ;  // the size is 8 
 
 	// LAB 3: Your code here.
+    SETGATE(idt[0], 0, GD_KT, int0, 0);
+    SETGATE(idt[1], 0, GD_KT, int1, 0);
+    SETGATE(idt[2], 0, GD_KT, int2, 0);
+    SETGATE(idt[3], 0, GD_KT, int3, 3);  // breakpoint
+
+    SETGATE(idt[4], 0, GD_KT, int4, 0);
+    SETGATE(idt[5], 0, GD_KT, int5, 0);
+    SETGATE(idt[6], 0, GD_KT, int6, 0);
+    SETGATE(idt[7], 0, GD_KT, int7, 0);
+    SETGATE(idt[8], 0, GD_KT, int8, 0);
+    //SETGATE(idt[9], 0, GD_KT, int9, 0);
+
+    SETGATE(idt[10], 0, GD_KT, int10, 0);
+    SETGATE(idt[11], 0, GD_KT, int11, 0);
+    SETGATE(idt[12], 0, GD_KT, int12, 0);
+    SETGATE(idt[13], 0, GD_KT, int13, 0);
+    SETGATE(idt[14], 0, GD_KT, int14, 0);
+ //   SETGATE(idt[15], 0, GD_KT, int15, 0);
+
+    SETGATE(idt[16], 0, GD_KT, int16, 0);
+    SETGATE(idt[17], 0, GD_KT, int17, 0);
+    SETGATE(idt[18], 0, GD_KT, int18, 0);
+    SETGATE(idt[19], 0, GD_KT, int19, 0);
+    SETGATE(idt[48], 0, GD_KT, int48, 3);   // system call
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -143,15 +196,35 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	 if (tf->tf_trapno == T_PGFLT) 
+	   {
+        	page_fault_handler(tf);
+        	return;
+ 	   }
+
+	 if (tf->tf_trapno == T_BRKPT) 
+	   {
+        	monitor(tf);
+        	return;
+	   }
+ 
+
+	if (tf->tf_trapno == T_SYSCALL) 
+	{	
+		tf->tf_regs.reg_eax =   syscall(tf->tf_regs.reg_eax,    tf->tf_regs.reg_edx,    tf->tf_regs.reg_ecx,    tf->tf_regs.reg_ebx,    tf->tf_regs.reg_edi,    tf->tf_regs.reg_esi);
+        	return; 
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
 	else {
+		cprintf("the env will be destroyed by trap_dispatch bcz it asked for an invalid interrupt \n"); 
 		env_destroy(curenv);
 		return;
-	}
+	     }
+
 }
 
 void
@@ -166,9 +239,10 @@ trap(struct Trapframe *tf)
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
 
-	cprintf("Incoming TRAP frame at %p\n", tf);
-
-	if ((tf->tf_cs & 3) == 3) {
+	cprintf("Incoming TRAP frame at %p and trap_num %s\n", tf, trapname(tf->tf_trapno));
+	//cprintf("  b4 curenv->env_status = %d \n" , curenv->env_status);
+	if ((tf->tf_cs & 3) == 3) 
+	{
 		// Trapped from user mode.
 		assert(curenv);
 
@@ -188,6 +262,9 @@ trap(struct Trapframe *tf)
 	trap_dispatch(tf);
 
 	// Return to the current environment, which should be running.
+	//cprintf(" curenv && curenv->env_status = %d \n" , curenv && curenv->env_status);
+	//cprintf(" curenv  = %d \n" , curenv);
+	//cprintf("  curenv->env_status = %d \n" , curenv->env_status);
 	assert(curenv && curenv->env_status == ENV_RUNNING);
 	env_run(curenv);
 }
@@ -202,16 +279,20 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
-
+	cprintf(" page_fault_handler() \n" ); 
 	// LAB 3: Your code here.
-
+	if ((tf->tf_cs & 3) == 0) 
+		{
+		print_trapframe(tf);
+		panic(" a page fault in the kernel");
+		}
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
 
 	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
+	cprintf("[%08x] user fault va %08x ip %08x\n",  curenv->env_id,   fault_va, tf->tf_eip);
 	print_trapframe(tf);
+		cprintf(" the env wil be destroyed in page_fault_handler() \n" ); 
 	env_destroy(curenv);
 }
 

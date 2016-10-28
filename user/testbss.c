@@ -12,6 +12,7 @@ umain(int argc, char **argv)
 	int i;
 
 	cprintf("Making sure bss works right...\n");
+	//cprintf("Yes, good.  Now doing a wild write off the end...\n");
 	for (i = 0; i < ARRAYSIZE; i++)
 		if (bigarray[i] != 0)
 			panic("bigarray[%d] isn't cleared!\n", i);

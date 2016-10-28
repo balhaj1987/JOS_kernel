@@ -32,7 +32,7 @@
  *                     |                              | RW/--
  *                     |   Remapped Physical Memory   | RW/--
  *                     |                              | RW/--
- *    KERNBASE, ---->  +------------------------------+ 0xf0000000      --+
+ *    KERNBASE, ---->  +------------------------------+ 0xf0000000      --+ //3.75G
  *    KSTACKTOP        |     CPU0's Kernel Stack      | RW/--  KSTKSIZE   |
  *                     | - - - - - - - - - - - - - - -|                   |
  *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
@@ -66,10 +66,10 @@
  *                     .                              .
  *                     |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
  *                     |     Program Data & Heap      |
- *    UTEXT -------->  +------------------------------+ 0x00800000     // 8Mega
+ *    UTEXT -------->  +------------------------------+ 0x00800000
  *    PFTEMP ------->  |       Empty Memory (*)       |        PTSIZE
  *                     |                              |
- *    UTEMP -------->  +------------------------------+ 0x00400000       --+   // 4 Mega
+ *    UTEMP -------->  +------------------------------+ 0x00400000      --+
  *                     |       Empty Memory (*)       |                   |
  *                     | - - - - - - - - - - - - - - -|                   |
  *                     |  User STAB Data (optional)   |                 PTSIZE
@@ -89,19 +89,19 @@
 // At IOPHYSMEM (640K) there is a 384K hole for I/O.  From the kernel,
 // IOPHYSMEM can be addressed at KERNBASE + IOPHYSMEM.  The hole ends
 // at physical address EXTPHYSMEM.
-#define IOPHYSMEM	0x0A0000     // this number is 640K 
-#define EXTPHYSMEM	0x100000   // the subtraction of the 2 numbers is 384K which is used by the io i guess
+#define IOPHYSMEM	0x0A0000
+#define EXTPHYSMEM	0x100000
 
 // Kernel stack.
-#define KSTACKTOP	KERNBASE                // the kernesel uses whatever above the kernbase and the stack goes down from there
-#define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack   ((32k))
-#define KSTKGAP		(8*PGSIZE)   		// size of a kernel stack guard   // so it won;t overflow??
+#define KSTACKTOP	KERNBASE
+#define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack
+#define KSTKGAP		(8*PGSIZE)   		// size of a kernel stack guard
 
-// Memory-mapped IO.   // so the size of this space is PTSIZE, right??
-#define MMIOLIM		(KSTACKTOP - PTSIZE)   // PTSIZE = # of entries in the table (# of pages) * page size                 //MMIO Limit
-#define MMIOBASE	(MMIOLIM - PTSIZE)   // memory mapped IO Base 
+// Memory-mapped IO.
+#define MMIOLIM		(KSTACKTOP - PTSIZE)
+#define MMIOBASE	(MMIOLIM - PTSIZE)
 
-#define ULIM		(MMIOBASE)     // above that is MMIO and then kernel ,   below that is user space
+#define ULIM		(MMIOBASE)
 
 /*
  * User read-only mappings! Anything below here til UTOP are readonly to user.
@@ -128,7 +128,7 @@
 #define USTACKTOP	(UTOP - 2*PGSIZE)
 
 // Where user programs generally begin
-#define UTEXT		(2*PTSIZE)    // UTEXT == user programs 
+#define UTEXT		(2*PTSIZE)
 
 // Used for temporary page mappings.  Typed 'void*' for convenience
 #define UTEMP		((void*) PTSIZE)
@@ -136,7 +136,7 @@
 // (should not conflict with other temporary page mappings)
 #define PFTEMP		(UTEMP + PTSIZE - PGSIZE)
 // The location of the user-level STABS data structure
-#define USTABDATA	(PTSIZE / 2)   // 2 Mega
+#define USTABDATA	(PTSIZE / 2)
 
 #ifndef __ASSEMBLER__
 

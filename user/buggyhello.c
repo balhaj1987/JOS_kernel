@@ -6,6 +6,6 @@
 void
 umain(int argc, char **argv)
 {
-	sys_cputs((char*)1, 1);
+	sys_cputs((char*)1, 1);   // was the adress 0 ? and I change it to 1 ??!!
 }
 

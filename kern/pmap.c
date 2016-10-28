@@ -112,8 +112,8 @@ boot_alloc(uint32_t n)
 		//cprintf("\n\n  The initial nextfree is equal to end = %x \n",nextfree);
 			}
 
-	if (n > (npages * PGSIZE) )   // to test if too much memory has been allocated !!!
-		panic("The requested memory to be allocated is too large!!\n");
+	//if (n > (npages * PGSIZE) )   // to test if too much memory has been allocated !!!
+	//	panic("The requested memory to be allocated is too large!!\n");
 	
 		
 	if (n != 0)
@@ -170,7 +170,7 @@ mem_init(void)
 	// following line.)
 
 	// Permissions: kernel R, user R
-	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
+	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;  //  adding entry to the page directory, where uvpt now mapped to the page directory itsself
 
 
 
@@ -192,6 +192,9 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
+	extern struct Env * envs;  // "extern" bcz this variabl is declared in env.c module/file 
+	envs = (struct Env *) boot_alloc(NENV * sizeof(struct Env));   //  will allocate enough memory, and assign the beginning address to envs
+
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -217,11 +220,9 @@ mem_init(void)
 	// Your code goes here:
 
 	boot_map_region(kern_pgdir,  UPAGES,           sizeof(struct PageInfo) * npages, PADDR(pages), PTE_U | PTE_P);  
-
-
    	boot_map_region(kern_pgdir, (uintptr_t) pages, sizeof(struct PageInfo) * npages, PADDR(pages), PTE_W | PTE_P);  
 
-
+       //cprintf("PADDR(pages)= %x\n", PADDR(pages));
 
 
 
@@ -232,6 +233,13 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+
+
+ 
+
+	boot_map_region(kern_pgdir,  UENVS,           sizeof(struct Env) * NENV, PADDR(envs),  PTE_U | PTE_P); 
+   	boot_map_region(kern_pgdir, (uintptr_t) envs, sizeof(struct Env) * NENV, PADDR(envs), PTE_W | PTE_P);  
+	//cprintf("UENVS= %x\n", UENVS);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -245,7 +253,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 
-	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
+	boot_map_region(kern_pgdir,      KSTACKTOP - KSTKSIZE,          KSTKSIZE,            PADDR(bootstack),        PTE_W | PTE_P);
 	
 
 	//////////////////////////////////////////////////////////////////////
@@ -257,7 +265,8 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
 
-	boot_map_region(kern_pgdir, KERNBASE, 0xffffffff-KERNBASE, 0, PTE_W | PTE_P);
+	boot_map_region(kern_pgdir,       KERNBASE,            0xffffffff-KERNBASE,           0,                PTE_W | PTE_P  );
+
 
 
 
@@ -526,9 +535,9 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	for ( int i=0 ; i< size_r/PGSIZE; i++)   
 	{
 		pte= pgdir_walk(pgdir, (void *) va, true);  // return the page table entry pointer related to that va, if there is no one, then create it 
-		//cprintf(" pte  = %x\n", pte);
-		if (*pte != 0)
-			cprintf(" *pte  = %x\n", *pte);
+
+		if (*pte != 0);
+
 		*pte = PTE_ADDR(pa) | perm | PTE_P;    // PTE_ADDR(pa) is just to make sure it is page size aligned
 		pa = pa+PGSIZE;    // increase the physica address by 4096 to point to the next page
 		va = va+PGSIZE;
@@ -655,7 +664,7 @@ tlb_invalidate(pde_t *pgdir, void *va)
 
 static uintptr_t user_mem_check_addr;
 
-//
+
 // Check that an environment is allowed to access the range of memory
 // [va, va+len) with permissions 'perm | PTE_P'.
 // Normally 'perm' will contain PTE_U at least, but this is not required.
@@ -673,21 +682,40 @@ static uintptr_t user_mem_check_addr;
 // Returns 0 if the user program can access this range of addresses,
 // and -E_FAULT otherwise.
 //
+
 int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
-	// LAB 3: Your code here.
+	// LAB 3: Your code here. 
+		cprintf(" the address passed for a check is %x \n", va);
+		pte_t * pte_check = NULL;
+		size_t  end  = (size_t ) ROUNDUP(va+len, PGSIZE);
+		void    *va_r  = (void *)  ROUNDDOWN(va, PGSIZE);
+
+		for (int i=  (int) va_r ; i < end ; i= i+PGSIZE)
+			{			 
+			pte_check = pgdir_walk(env->env_pgdir, (void *) i, 0);
+			if (  (i >= ULIM )  || (pte_check == NULL) || (   ((int) *pte_check & perm) !=  perm) )
+				{
+				if ( i == (int) va_r)
+				user_mem_check_addr = (int) va; 
+				else 
+				user_mem_check_addr = i; 
+				return 	-E_FAULT; 
+				}
+			}
 
 	return 0;
 }
 
-//
 // Checks that environment 'env' is allowed to access the range
 // of memory [va, va+len) with permissions 'perm | PTE_U | PTE_P'.
 // If it can, then the function simply returns.
 // If it cannot, 'env' is destroyed and, if env is the current
 // environment, this function will not return.
 //
+
+
 void
 user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 {
@@ -709,7 +737,7 @@ user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 static void
 check_page_free_list(bool only_low_memory)
 {
-cprintf(" we are in check_page_free_list \n");
+
 	struct PageInfo *pp;
 	unsigned pdx_limit = only_low_memory ? 1 : NPDENTRIES;
 	int nfree_basemem = 0, nfree_extmem = 0;
@@ -793,7 +821,7 @@ static void
 
 check_page_alloc(void)
 {
-	cprintf("check_page_allocate started!\n");
+
 	struct PageInfo *pp, *pp0, *pp1, *pp2;
 	int nfree;
 	struct PageInfo *fl;
@@ -862,21 +890,21 @@ check_page_alloc(void)
 		--nfree;
 	assert(nfree == 0);
 
-	cprintf("At the end of check_page_alloc \n");
+	cprintf("check_page_alloc(void) succedeed \n");
 }
 
 //
 // Checks that the kernel part of virtual address space
 // has been setup roughly correctly (by mem_init()).
 //
-// This function doesn't test every corner case,
+// This function doesn't test every corner case,baas
 // but it is a pretty good sanity check.
 //
 
 static void
 check_kern_pgdir(void)
 {
-	cprintf("check_kern_pgdir() started!\n");
+
 	uint32_t i, n;
 	pde_t *pgdir;
 
@@ -889,6 +917,7 @@ check_kern_pgdir(void)
 
 	// check envs array (new test for lab 3)
 	n = ROUNDUP(NENV*sizeof(struct Env), PGSIZE);
+
 	for (i = 0; i < n; i += PGSIZE)
 		assert(check_va2pa(pgdir, UENVS + i) == PADDR(envs) + i);
 
@@ -946,7 +975,7 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 static void
 check_page(void)
 {
-	cprintf("check_page() entered!\n");
+
 	struct PageInfo *pp, *pp0, *pp1, *pp2;
 	struct PageInfo *fl;
 	pte_t *ptep, *ptep1;
@@ -1135,5 +1164,5 @@ check_page_installed_pgdir(void)
 	// free the pages we took
 	page_free(pp0);
 
-	cprintf("check_page_installed_pgdir() succeeded!\n");
+	cprintf("check_page_installed_pgdir() succeeded!\n\n\n");
 }
