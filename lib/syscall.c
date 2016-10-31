@@ -20,15 +20,9 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// potentially change the condition codes and arbitrary
 	// memory locations.
 
-	asm volatile("int %1\n"
-		: "=a" (ret)
-		: "i" (T_SYSCALL),
-		  "a" (num),
-		  "d" (a1),
-		  "c" (a2),
-		  "b" (a3),
-		  "D" (a4),
-		  "S" (a5)
+	asm volatile("int %1\n"   // int 48, which is raising an interrupt for a syscall... %1 because it is the 2nd operand 
+		: "=a" (ret) // output operand
+		: "i" (T_SYSCALL),  "a" (num),	  "d" (a1),	  "c" (a2),	  "b" (a3),	  "D" (a4),	  "S" (a5)  // input operands 
 		: "cc", "memory");
 
 	if(check && ret > 0)

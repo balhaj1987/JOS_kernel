@@ -10,7 +10,6 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
-#include <kern/trap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -60,67 +59,66 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	uint32_t ebpr;
-
-	uint32_t *temp;
-        uint32_t *ptr1;
-        uintptr_t address;
 	__asm __volatile("movl %%ebp,%0" : "=r" (ebpr));
-	struct Eipdebuginfo i;	
-                uint32_t *ptr = (uint32_t*)ebpr ;
-      
+	uint32_t *ptr = (uint32_t*)ebpr ;
+	uint32_t *temp;
+        uintptr_t address;
+	
 	while(*ptr!=0)
 	{
 	
-	address = *(ptr+1);
-        
-	ptr1 = (uint32_t*) *ptr;
-        debuginfo_eip(address, &i);
-                 	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5), *(ptr1+6));
+	
+        uintptr_t address = *(ptr+1);
+        struct Eipdebuginfo i;	
+         debuginfo_eip(address, &i);
 
 
-      switch(i.eip_fn_narg) {
+   switch(i.eip_fn_narg) {
          
        case 0: 
-    	     cprintf("EBP :%08x  ,EIP %08x  ,args:  non \n",*ptr,*(ptr+1));
+    	     cprintf("EBP :%08x  ,EIP %08x  ,args:  non \n",ptr,*(ptr+1));
        break; 
 
 
          case 1:
-               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x \n",*ptr,*(ptr+1),*(ptr1+2));
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x \n",ptr,*(ptr+1),*(ptr+2));
          break;
 
 
         case 2:
-               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3));
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x \n",ptr,*(ptr+1),*(ptr+2),*(ptr+3));
          break;
 
 
          case 3:
-               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4));
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x \n",ptr,*(ptr+1),*(ptr+2),*(ptr+3), *(ptr+4));
          break;
 
 
 
          case 4:
-               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5));
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x \n",ptr,*(ptr+1),*(ptr+2),*(ptr+3), *(ptr+4), *(ptr+5));
          break;
 
 
 
        default: //5 or more
-               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x,   %08x \n",*ptr,*(ptr+1),*(ptr1+2),*(ptr1+3), *(ptr1+4), *(ptr1+5), *(ptr1+6));
+               	cprintf("EBP :%08x  ,EIP %08x  ,args:  %08x ,  %08x,   %08x ,   %08x,   %08x \n",ptr,*(ptr+1),*(ptr+2),*(ptr+3), *(ptr+4), *(ptr+5), *(ptr+6));
          break;
 
-        }      
+}
 
 	temp = ptr;
 	ptr = (uint32_t*) *temp;
 
-            
-         cprintf("Source File : %s    ", i.eip_file);
-         cprintf("Line# : %d    ", i.eip_line);
-         cprintf("Func Name   : %s  ", i.eip_fn_name);
-         cprintf("number of arguments  : %d \n\n ", i.eip_fn_narg);    
+
+        
+
+       
+        cprintf("Source File : %s    ", i.eip_file);
+        cprintf("Line# : %d    ", i.eip_line);
+        cprintf("Func Name   : %s  ", i.eip_fn_name);
+        cprintf("number of arguments  : %d \n\n ", i.eip_fn_narg);    
     
 	}	
 
@@ -182,8 +180,6 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
-	if (tf != NULL)
-		print_trapframe(tf);
 
 	while (1) {
 		buf = readline("K> ");

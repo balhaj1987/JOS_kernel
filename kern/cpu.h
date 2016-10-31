@@ -19,16 +19,16 @@ enum {
 
 // Per-CPU state
 struct CpuInfo {
-	uint8_t cpu_id;                 // Local APIC ID; index into cpus[] below
+	uint8_t cpu_id;                  // Local APIC ID; index into cpus[] below
 	volatile unsigned cpu_status;   // The status of the CPU
-	struct Env *cpu_env;            // The currently-running environment.
-	struct Taskstate cpu_ts;        // Used by x86 to find stack for interrupt
+	struct Env *cpu_env;           // The currently-running environment.
+	struct Taskstate cpu_ts;      // Used by x86 to find stack for interrupt
 };
 
 // Initialized in mpconfig.c
 extern struct CpuInfo cpus[NCPU];
-extern int ncpu;                    // Total number of CPUs in the system
-extern struct CpuInfo *bootcpu;     // The boot-strap processor (BSP)
+extern int ncpu;                      // Total number of CPUs in the system
+extern struct CpuInfo *bootcpu;      // The boot-strap processor (BSP)
 extern physaddr_t lapicaddr;        // Physical MMIO address of the local APIC
 
 // Per-CPU kernel stacks
