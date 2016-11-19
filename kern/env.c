@@ -93,6 +93,8 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	e = &envs[ENVX(envid)];
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
 		*env_store = 0;
+		//	cprintf("here in  envid2env 1\n\n");
+
 		return -E_BAD_ENV;
 	}
 
@@ -103,8 +105,11 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// or an immediate child of the current environment.
 	if (checkperm && e != curenv && e->env_parent_id != curenv->env_id) {
 		*env_store = 0;
+		//cprintf("here in  envid2env 2\n\n");
+
 		return -E_BAD_ENV;
 	}
+		//	cprintf("here in  envid2env last\n\n");
 
 	*env_store = e;
 	return 0;
@@ -231,7 +236,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 		return -E_NO_FREE_ENV;
 
 	// Allocate and set up the page directory for this environment.
-	if ((r = env_setup_vm(e)) < 0)
+	if ((r = env_setup_vm(e)) < 0)   // setting up the page directory of the environment 
 		return r;
 
 	// Generate an env_id for this environment.
@@ -269,6 +274,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	 e->env_tf.tf_eflags = e->env_tf.tf_eflags | FL_IF;
+
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -387,7 +394,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	region_alloc(e, (void *) (USTACKTOP - PGSIZE), PGSIZE);  // allocate physical memory , and map it to this virtual address
 	// so the stack starts from (USTACKTOP - PGSIZE) to USTACKTOP  ,, just 1 page 
 	e->env_tf.tf_eip = ELFHDR->e_entry;    //
-	cprintf(" ELFHDR->e_entry = %x \n ", ELFHDR->e_entry); 
+	//cprintf(" ELFHDR->e_entry = %x \n ", ELFHDR->e_entry); 
 
 	lcr3(PADDR(kern_pgdir));  //SHOULD WE DO THIS ONE??!!! 
 
@@ -446,7 +453,7 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
-	cprintf( "env_creat() is creating an environment to run binary of address :    %x\n",binary );
+	//cprintf( "env_creat() is creating an environment to run binary of address :    %x\n",binary );
 	struct Env * e; 
 	int re = env_alloc(&e, 0);
 			//cprintf( " e    %x\n", *e );
@@ -588,7 +595,7 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 				//cprintf( " e   %x\n", e );
-	cprintf( "env_run   :    %x\n", e );
+	//cprintf( "env_run   :    %x\n", e );
 	if(curenv !=e)
 	{
 	if(curenv != NULL)
@@ -597,7 +604,9 @@ env_run(struct Env *e)
 	curenv = e;
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++; 
+	//cprintf(" e = %x\n\n", e);
 	lcr3(PADDR(curenv->env_pgdir));
+	//cprintf(" struct Env *e = %x\n\n", sizeof(struct Env));
 	}
 	//curenv->env_status = ENV_RUNNABLE; 		  ??? 
 	unlock_kernel();

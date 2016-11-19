@@ -72,6 +72,17 @@ TRAPHANDLER_NOEC(int19, T_SIMDERR)  // 19
 TRAPHANDLER_NOEC(int48, T_SYSCALL)   // 48 (error code?)
 
 
+TRAPHANDLER_NOEC(int32, IRQ_OFFSET+0)  // interuupt 
+TRAPHANDLER_NOEC(int33, IRQ_OFFSET+1)    // interrupt 
+TRAPHANDLER_NOEC(int34, IRQ_OFFSET+2)    // interrupt 
+TRAPHANDLER_NOEC(int35, IRQ_OFFSET+3)  // interrupt
+TRAPHANDLER_NOEC(int36, IRQ_OFFSET+4)  // interrupt 
+TRAPHANDLER_NOEC(int37, IRQ_OFFSET+5)  // 
+TRAPHANDLER_NOEC(int38, IRQ_OFFSET+6) // 
+TRAPHANDLER_NOEC(int39, IRQ_OFFSET+7)  // interrupt 
+//TRAPHANDLER_NOEC(int37, IRQ_OFFSET+8)  // 
+//TRAPHANDLER_NOEC(int38, IRQ_OFFSET+9) // 
+
 /*
  * Lab 3: Your code here for _alltraps
  */

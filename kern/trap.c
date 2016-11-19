@@ -39,6 +39,16 @@
     void int19 ();
     void int48 ();
 
+    void int32 ();
+    void int33 ();
+    void int34();
+    void int35 ();
+    void int36 ();
+    void int37 ();
+    void int38 ();
+    void int39 ();
+   
+
 
 
 static struct Taskstate ts;
@@ -126,6 +136,15 @@ trap_init(void)
     SETGATE(idt[19], 0, GD_KT, int19, 0);
     SETGATE(idt[48], 0, GD_KT, int48, 3);   // system call
 
+    SETGATE(idt[32], 0, GD_KT, int32, 0);
+    SETGATE(idt[33], 0, GD_KT, int33, 0);
+    SETGATE(idt[34], 0, GD_KT, int34, 0);
+    SETGATE(idt[35], 0, GD_KT, int35, 0);
+
+    SETGATE(idt[36], 0, GD_KT, int36, 0);
+    SETGATE(idt[37], 0, GD_KT, int37, 0);
+    SETGATE(idt[38], 0, GD_KT, int38, 0);
+    SETGATE(idt[39], 0, GD_KT, int39, 0);
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -267,6 +286,13 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
 
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) 
+	{
+		lapic_eoi();
+		//cprintf(" A Timer interrupt has been received \n");
+		sched_yield();
+		return;
+	}
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -303,7 +329,7 @@ trap(struct Trapframe *tf)
 //<<<<<<< HEAD
 	//if ((tf->tf_cs & 3) == 3) {
 //=======
-	cprintf("Incoming TRAP frame at %p and trap_num %s\n", tf, trapname(tf->tf_trapno));
+	//cprintf("Incoming TRAP frame at %p and trap_num %s\n", tf, trapname(tf->tf_trapno));
 	//cprintf("  b4 curenv->env_status = %d \n" , curenv->env_status);
 	if ((tf->tf_cs & 3) == 3) 
 	{
@@ -366,7 +392,7 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
-	cprintf(" page_fault_handler() \n" ); 
+	//cprintf(" page_fault_handler() \n" ); 
 	// LAB 3: Your code here.
 	if ((tf->tf_cs & 3) == 0) 
 		{
@@ -392,9 +418,10 @@ page_fault_handler(struct Trapframe *tf)
 	// the new stack frame because the exception stack _is_ the trap-time
 	// stack.
 	//
-	// If there's no page fault upcall, the environment didn't allocate a
-	// page for its exception stack or can't write to it, or the exception
-	// stack overflows, then destroy the environment that caused the fault.
+	// If there's no page fault upcall, 
+	//the environment didn't allocate a page for its exception stack or can't write to it, 
+	//or the exception stack overflows, then destroy the environment that caused the fault.
+
 	// Note that the grade script assumes you will first check for the page
 	// fault upcall and print the "user fault va" message below if there is
 	// none.  The remaining three checks can be combined into a single test.
@@ -405,11 +432,46 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	   struct UTrapframe *utrapframe;
 
-	// Destroy the environment that caused the fault.
+
+	if ( (!curenv->env_pgfault_upcall) || (USTACKTOP < tf->tf_esp && tf->tf_esp < UXSTACKTOP - PGSIZE)  )
+	{
+		// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",  curenv->env_id,   fault_va, tf->tf_eip);
 	print_trapframe(tf);
 		cprintf(" the env wil be destroyed in page_fault_handler() \n" ); 
 	env_destroy(curenv);
+	}
+	
+
+	//cprintf("[%08x] user fault va %08x ip %08x\n",  curenv->env_id,   fault_va, tf->tf_eip);
+	//print_trapframe(tf);
+
+
+	
+
+	if (tf->tf_esp < UXSTACKTOP   &&  tf->tf_esp >= UXSTACKTOP-PGSIZE)  //already in the exception stack
+		utrapframe = (struct UTrapframe *) (tf->tf_esp - sizeof (struct UTrapframe) - 4);
+
+	else 
+		utrapframe = (struct UTrapframe *) (UXSTACKTOP - sizeof (struct UTrapframe));
+	
+	user_mem_assert(curenv, (void *)(utrapframe), sizeof(struct UTrapframe), PTE_W | PTE_U | PTE_P);
+
+		
+	utrapframe->utf_regs = tf->tf_regs;
+	utrapframe->utf_eip = tf->tf_eip;
+	utrapframe->utf_err = tf->tf_err;
+	utrapframe->utf_esp = tf->tf_esp;
+	utrapframe->utf_fault_va = fault_va;
+	utrapframe->utf_eflags = tf->tf_eflags;
+
+
+	tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+	tf->tf_esp = (uintptr_t)utrapframe; 
+ 	env_run(curenv);
+
+	
 }
 

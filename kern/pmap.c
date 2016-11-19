@@ -780,7 +780,7 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here. 
-		cprintf(" the address passed for a check is %x \n", va);
+		//cprintf(" the address passed for a check is %x \n", va);
 		pte_t * pte_check = NULL;
 		size_t  end  = (size_t ) ROUNDUP(va+len, PGSIZE);
 		void    *va_r  = (void *)  ROUNDDOWN(va, PGSIZE);
