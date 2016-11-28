@@ -57,7 +57,9 @@ serve_init(void)
 		opentab[i].o_fileid = i;
 		opentab[i].o_fd = (struct Fd*) va;
 		va += PGSIZE;
+
 	}
+	//cprintf(" serve_init is done \n");
 }
 
 // Allocate an open file.
@@ -207,14 +209,37 @@ serve_set_size(envid_t envid, struct Fsreq_set_size *req)
 int
 serve_read(envid_t envid, union Fsipc *ipc)
 {
-	struct Fsreq_read *req = &ipc->read;
+
+	
+	struct Fsreq_read *req = &ipc->read;   
 	struct Fsret_read *ret = &ipc->readRet;
 
 	if (debug)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
-	return 0;
+
+	
+	struct OpenFile *po;
+	int r;
+
+	if ((r = openfile_lookup(envid, req->req_fileid, &po)) < 0)
+		return r;
+	
+	struct File *file = po->o_file;
+	struct Fd *fd = po->o_fd;
+
+	// file_read(struct File *f, void *buf , size_t count, off_t offset) 
+	// buf is where the data read will be stores, it will return the number of bytes read (count)
+	// offset is where to start reading in this file 
+	//MIN(req->req_n, PGSIZE)
+	if ((r = file_read(file,  ret->ret_buf, req->req_n, fd->fd_offset)) < 0)
+			return r;
+	
+	else
+			fd->fd_offset += r;  // increment the offset by the number of bytes thas been read 
+		return r;
+	
 }
 
 
@@ -225,11 +250,47 @@ serve_read(envid_t envid, union Fsipc *ipc)
 int
 serve_write(envid_t envid, struct Fsreq_write *req)
 {
-	if (debug)
+	/*if (debug)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
-	panic("serve_write not implemented");
+	struct OpenFile *po;
+	int r;
+
+	if ((r = openfile_lookup(envid, req->req_fileid, &po)) < 0)
+		return r;
+	
+	struct File *file = po->o_file;
+	struct Fd *fd = po->o_fd;
+	if((r = file_write(file, req->req_buf, req->req_n, fd->fd_offset)) < 0)
+		return r;
+
+	fd->fd_offset += r;
+	return r;*/
+
+
+
+		if (debug)
+		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
+
+	// LAB 5: Your code here.
+    int r;
+    struct OpenFile *o;
+    size_t nbytes;
+
+    r = openfile_lookup(envid, req->req_fileid, &o);
+    if (r < 0) {
+        cprintf("serve_write: failed to lookup open file id\n");
+        return r;
+    }
+
+    nbytes = MIN(req->req_n, PGSIZE - (sizeof(int) + sizeof(size_t)));
+    nbytes = file_write(o->o_file, (void *) req->req_buf, nbytes, o->o_fd->fd_offset);
+    if (nbytes >= 0) {
+        o->o_fd->fd_offset += nbytes;
+    }
+
+    return nbytes;
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
@@ -301,7 +362,12 @@ serve(void)
 
 	while (1) {
 		perm = 0;
+
+		//req : represet the service type : read/open/write : bcz ipc_rcv() will return the value sent by ipc_send()
+		// fsreq : this is where the fs env. wants to receive fsibuf sent by the reg. env. 
 		req = ipc_recv((int32_t *) &whom, fsreq, &perm);
+		// now the fs env will br non_runnable until it receives something ...
+
 		if (debug)
 			cprintf("fs req %d from %08x [page %08x: %s]\n",
 				req, whom, uvpt[PGNUM(fsreq)], fsreq);
@@ -314,6 +380,9 @@ serve(void)
 		}
 
 		pg = NULL;
+
+		//  now we will call the appropriate func. depends on what the reg. env. sent us..
+		// for example, if it sent read request, we (as the fs env) will call serve_read(envid, buffer page)
 		if (req == FSREQ_OPEN) {
 			r = serve_open(whom, (struct Fsreq_open*)fsreq, &pg, &perm);
 		} else if (req < NHANDLERS && handlers[req]) {
@@ -322,7 +391,11 @@ serve(void)
 			cprintf("Invalid request code %d from %08x\n", req, whom);
 			r = -E_INVAL;
 		}
-		ipc_send(whom, r, pg, perm);
+
+		// now the fs env will send to the env the return vlues, for example, how many bytes have been read
+		// note that the reg. env have been waiting to receive data using fspic()
+		ipc_send(whom, r, pg, perm);   // pg is only used for open(), right?
+
 		sys_page_unmap(0, fsreq);
 	}
 }
@@ -340,7 +413,7 @@ umain(int argc, char **argv)
 
 	serve_init();
 	fs_init();
-        fs_test();
-	serve();
+    fs_test();    // test file_get_block and other things until before file_read
+	serve();     // it will keep serving whatever requests the other environments are sending?
 }
 

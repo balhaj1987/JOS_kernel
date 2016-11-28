@@ -110,6 +110,8 @@ opendisk(const char *name)
 	alloc(BLKSIZE);
 	super = alloc(BLKSIZE);
 	super->s_magic = FS_MAGIC;
+
+	//cprintf("//////////////////////////////////////////////////");
 	super->s_nblocks = nblocks;
 	super->s_root.f_type = FTYPE_DIR;
 	strcpy(super->s_root.f_name, "/");

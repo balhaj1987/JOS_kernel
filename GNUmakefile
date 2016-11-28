@@ -54,7 +54,7 @@ QEMU := $(shell if which qemu > /dev/null; \
         elif which qemu-system-i386 > /dev/null; \
         then echo qemu-system-i386; exit; \
 	else \
-	qemu=/Applications/Q.app/Contents/MacOS/i386-softmmu.app/Contents/MacOS/i386-softmmu; \
+	qemu=/home/moha/advancedos/xyz/qemu/x86_64-softmmu/qemu-system-x86_64; \
 	if test -x $$qemu; then echo $$qemu; exit; fi; fi; \
 	echo "***" 1>&2; \
 	echo "*** Error: Couldn't find a working QEMU executable." 1>&2; \

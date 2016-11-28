@@ -17,15 +17,17 @@ fsipc(unsigned type, void *dstva)
 {
 	static envid_t fsenv;
 	if (fsenv == 0)
-		fsenv = ipc_find_env(ENV_TYPE_FS);
+		fsenv = ipc_find_env(ENV_TYPE_FS); // now fsenv points to the file sys. environment 
 
 	static_assert(sizeof(fsipcbuf) == PGSIZE);
 
 	if (debug)
 		cprintf("[%08x] fsipc %d %08x\n", thisenv->env_id, type, *(uint32_t *)&fsipcbuf);
 
-	ipc_send(fsenv, type, &fsipcbuf, PTE_P | PTE_W | PTE_U);
-	return ipc_recv(NULL, dstva, NULL);
+	ipc_send(fsenv, type, &fsipcbuf, PTE_P | PTE_W | PTE_U);  
+	return ipc_recv(NULL, dstva, NULL); 
+
+	//comment : so an env will send a request to the fs env, that fs will read it then will send the result ?  i
 }
 
 static int devfile_flush(struct Fd *fd);
@@ -103,6 +105,11 @@ devfile_flush(struct Fd *fd)
 	return fsipc(FSREQ_FLUSH, NULL);
 }
 
+
+
+
+
+
 // Read at most 'n' bytes from 'fd' at the current position into 'buf'.
 //
 // Returns:
@@ -141,7 +148,31 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	// remember that write is always allowed to write *fewer*
 	// bytes than requested.
 	// LAB 5: Your code here
-	panic("devfile_write not implemented");
+	/*fsipcbuf.write.req_fileid = fd->fd_file.id;
+	fsipcbuf.write.req_n = MIN(n, sizeof(fsipcbuf.write.req_buf));
+	memmove(fsipcbuf.write.req_buf, buf, fsipcbuf.write.req_n);
+
+	// Do call and return result (error or size)
+	int r = fsipc(FSREQ_WRITE, NULL);
+	return r;
+
+
+	//panic("devfile_write not implemented");*/
+
+
+	
+    size_t max_buff_size = PGSIZE - sizeof(int) - sizeof(size_t);
+    int r;
+
+    n = MIN(n, max_buff_size);
+
+    fsipcbuf.write.req_fileid = fd->fd_file.id;
+    fsipcbuf.write.req_n = n;
+    memmove(fsipcbuf.write.req_buf, buf, n);
+    if ((r = fsipc(FSREQ_WRITE, NULL)) < 0)
+        return r;
+    assert(r <= n);
+    return r;
 }
 
 static int
