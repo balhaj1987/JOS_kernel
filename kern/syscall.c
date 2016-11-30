@@ -162,6 +162,8 @@ sys_env_set_status(envid_t envid, int status)
 // Returns 0 on success, < 0 on error.  Errors are:
 //	-E_BAD_ENV if environment envid doesn't currently exist,
 //		or the caller doesn't have permission to change envid.
+
+
 static int
 sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 {
@@ -176,8 +178,8 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	if ((r = user_mem_check(e,   tf,     sizeof(struct Trapframe),   PTE_W | PTE_U)) < 0)
 			return r;
 
-
     e->env_tf = *tf;
+   // cprintf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< %x       %x\n",*tf, tf );
     e->env_tf.tf_eflags |= FL_IF;
     tf->tf_cs |= 3;
     return 0;
@@ -185,15 +187,6 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	//panic("sys_env_set_trapframe not implemented");
 }
 
-
-
-
-
-
-
-
-
-//>>>>>>> lab4
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
 // Env's 'env_pgfault_upcall' field.  When 'envid' causes a page fault, the

@@ -47,6 +47,13 @@
     void int37 ();
     void int38 ();
     void int39 ();
+
+    void int40();
+    void int41 ();
+    void int42 ();
+    void int43 ();
+  //  void int38 ();
+    //void int39 ();
    
 
 
@@ -145,6 +152,10 @@ trap_init(void)
     SETGATE(idt[37], 0, GD_KT, int37, 0);
     SETGATE(idt[38], 0, GD_KT, int38, 0);
     SETGATE(idt[39], 0, GD_KT, int39, 0);
+    SETGATE(idt[40], 0, GD_KT, int40, 0);
+    SETGATE(idt[41], 0, GD_KT, int41, 0);
+    SETGATE(idt[42], 0, GD_KT, int42, 0);
+    SETGATE(idt[43], 0, GD_KT, int43, 0);
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -298,6 +309,18 @@ trap_dispatch(struct Trapframe *tf)
 		sched_yield();
 		return;
 	}
+
+	if (tf->tf_trapno == IRQ_OFFSET+IRQ_KBD) 
+	{
+        kbd_intr();
+        return;
+    }
+  
+    if (tf->tf_trapno == IRQ_OFFSET+IRQ_SERIAL)
+     {
+        serial_intr();
+        return;
+    }
 //>>>>>>> lab4
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);

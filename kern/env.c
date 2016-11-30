@@ -615,7 +615,7 @@ env_run(struct Env *e)
 	curenv->env_runs++; 
 	//cprintf(" e = %x\n\n", e);
 	lcr3(PADDR(curenv->env_pgdir));
-	cprintf(" env_run \n");
+	//cprintf(" env_run \n");
 	//cprintf(" struct Env *e = %x\n\n", sizeof(struct Env));
 	}
 	//curenv->env_status = ENV_RUNNABLE; 		  ??? 

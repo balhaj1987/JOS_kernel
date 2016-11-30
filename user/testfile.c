@@ -103,21 +103,17 @@ umain(int argc, char **argv)
 	if ((f = open("/big", O_WRONLY|O_CREAT)) < 0)
 		panic("creat /big: %e", f);
 	memset(buf, 0, sizeof(buf));
-		cprintf(" ///////////////0///////////////////////////////////\n");
 
 	for (i = 0; i < (NDIRECT*3)*BLKSIZE; i += sizeof(buf)) {
 		*(int*)buf = i;
 		if ((r = write(f, buf, sizeof(buf))) < 0)
 			panic("write /big@%d: %e", i, r);
 	}
-		cprintf(" ///////////////1///////////////////////////////////\n");
 
 	close(f);
-	cprintf(" ///////////////123///////////////////////////////////\n");
 
 	if ((f = open("/big", O_RDONLY)) < 0)
 		panic("open /big: %e", f);
-	cprintf(" ///////////////456///////////////////////////////////\n");
 
 	for (i = 0; i < (NDIRECT*3)*BLKSIZE; i += sizeof(buf)) {
 		*(int*)buf = i;
@@ -130,7 +126,6 @@ umain(int argc, char **argv)
 			panic("read /big from %d returned bad data %d",
 			      i, *(int*)buf);
 	}
-		cprintf(" ///////////////789///////////////////////////////////\n");
 
 	close(f);
 	cprintf("large file is good\n");

@@ -28,8 +28,8 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 	uint32_t pte = uvpt[PGNUM(addr)];
 
-	if (((err & FEC_WR) != FEC_WR) || ! (pte & PTE_COW) ) 
-		panic("error in pgfault is not write error or page is not COW.\n",err);
+	//if (((err & FEC_WR) != FEC_WR) || ! (pte & PTE_COW) ) 
+	//	panic("error in pgfault is not write error or page is not COW.\n",err);
 
 
 
@@ -92,7 +92,20 @@ duppage(envid_t envid, unsigned pn)
 	void * va = (void *) ((uint32_t) pn * PGSIZE);
 	pte_t pte = uvpt[pn];
 
-	if ((pte & PTE_W) || (pte & PTE_COW))
+
+			
+
+	if (pte & PTE_SHARE) 
+	{
+        r = sys_page_map(0, va, envid, va, pte & PTE_SYSCALL);
+        if (r < 0)
+            panic("duppage : sys_page_map error : %e.\n",r);
+    }
+
+    else 
+    {
+
+	 if ((pte & PTE_W) || (pte & PTE_COW))
 		perm_w |= PTE_COW;  
 	else    //if it is not writable page
 	{
@@ -114,7 +127,7 @@ duppage(envid_t envid, unsigned pn)
 	if (r < 0) 
 		panic("duppage error: when calling sys_page_map  : %e.\n", r);
 
-
+}
 
 	return 0;
 }

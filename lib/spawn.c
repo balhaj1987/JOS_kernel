@@ -92,7 +92,7 @@ spawn(const char *prog, const char **argv)
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
 	if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
-	    || elf->e_magic != ELF_MAGIC) {
+	                                                       || elf->e_magic != ELF_MAGIC) {
 		close(fd);
 		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
 		return -E_NOT_EXEC;
@@ -105,6 +105,7 @@ spawn(const char *prog, const char **argv)
 
 	// Set up trap frame, including initial stack.
 	child_tf = envs[ENVX(child)].env_tf;
+	cprintf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %x\n",&child_tf);
 	child_tf.tf_eip = elf->e_entry;
 
 	if ((r = init_stack(child, argv, &child_tf.tf_esp)) < 0)
@@ -300,7 +301,20 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 static int
 copy_shared_pages(envid_t child)
 {
-	// LAB 5: Your code here.
-	return 0;
-}
+	unsigned va = 0; 
+	int r =0; 
 
+	for (va = 0 ; va < USTACKTOP; va += PGSIZE)    // loop through all the user pages
+	{
+ 	   if ((uvpd[PDX(va)] & PTE_P) && (uvpt[PGNUM(va)] & PTE_P) &&   (uvpt[PGNUM(va)] & PTE_U) && (uvpt[PGNUM(va)] & PTE_SHARE) )  // if it is present and shared  
+ 	   {
+			r = sys_page_map(0, (void *) va, child, (void*) va, uvpt[PGNUM(va)] & PTE_SYSCALL);  // share it to the child as well
+ 	   
+    		if (r < 0)  // in case of mapping error
+        		panic("sharepage : sys_page_map error : %e.\n",r);
+    	}
+    }
+
+    return 0;	
+
+}
