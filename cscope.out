@@ -1,4 +1,4 @@
-cscope 15 $HOME/6.828/lab               0000675477
+cscope 15 $HOME/6.828/lab               0000675481
 	@boot/main.c
 
 1 
@@ -53021,7 +53021,7 @@ echocmds
 
 326 
 	`´štf
-("# %s\n", 
+("# 111 %s\n", 
 buf
 );
 
