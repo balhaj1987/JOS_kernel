@@ -56,11 +56,17 @@ fs_test(void)
 	if ((r = file_set_size(f, strlen(msg))) < 0)
 		panic("file_set_size 2: %e", r);
 	assert(!(uvpt[PGNUM(f)] & PTE_D));
+	//cprintf("//////////////////////////////111\n");
 	if ((r = file_get_block(f, 0, &blk)) < 0)
 		panic("file_get_block 2: %e", r);
+
 	strcpy(blk, msg);
 	assert((uvpt[PGNUM(blk)] & PTE_D));
+		//cprintf("//////////////////////////////112\n");
+
 	file_flush(f);
+		//cprintf("//////////////////////////////113");
+
 	assert(!(uvpt[PGNUM(blk)] & PTE_D));
 	assert(!(uvpt[PGNUM(f)] & PTE_D));
 	cprintf("file rewrite is good\n");

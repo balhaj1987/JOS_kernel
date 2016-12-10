@@ -19,9 +19,12 @@ umain(int argc, char **argv)
 	sys_yield();
 	sys_yield();
 	sys_yield();
+	//cprintf(" here 4\n");
 	sys_yield();
 	sys_yield();
 	sys_yield();
+	//cprintf(" here 4\n");
+
 	sys_yield();
 	sys_yield();
 

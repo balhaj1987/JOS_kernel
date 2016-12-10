@@ -96,21 +96,25 @@ umain(int argc, char **argv)
 	fd = (struct Fd*) (0xD0000000 + r*PGSIZE);
 	if (fd->fd_dev_id != 'f' || fd->fd_offset != 0 || fd->fd_omode != O_RDONLY)
 		panic("open did not fill struct Fd correctly\n");
+
 	cprintf("open is good\n");
 
 	// Try files with indirect blocks
 	if ((f = open("/big", O_WRONLY|O_CREAT)) < 0)
 		panic("creat /big: %e", f);
 	memset(buf, 0, sizeof(buf));
+
 	for (i = 0; i < (NDIRECT*3)*BLKSIZE; i += sizeof(buf)) {
 		*(int*)buf = i;
 		if ((r = write(f, buf, sizeof(buf))) < 0)
 			panic("write /big@%d: %e", i, r);
 	}
+
 	close(f);
 
 	if ((f = open("/big", O_RDONLY)) < 0)
 		panic("open /big: %e", f);
+
 	for (i = 0; i < (NDIRECT*3)*BLKSIZE; i += sizeof(buf)) {
 		*(int*)buf = i;
 		if ((r = readn(f, buf, sizeof(buf))) < 0)
@@ -122,6 +126,7 @@ umain(int argc, char **argv)
 			panic("read /big from %d returned bad data %d",
 			      i, *(int*)buf);
 	}
+
 	close(f);
 	cprintf("large file is good\n");
 }

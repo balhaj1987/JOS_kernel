@@ -19,6 +19,20 @@
 
 static void boot_aps(void);
 
+//<<<<<<< HEAD
+//=======
+// Test the stack backtrace function (lab 1 only)
+void
+test_backtrace(int x)
+{
+	cprintf("entering test_backtrace %d\n", x);
+	if (x > 0)
+		test_backtrace(x-1);
+	else
+		mon_backtrace(10, 0, 0);
+	cprintf("leaving test_backtrace %d\n", x);
+}
+//>>>>>>> lab1
 
 void
 i386_init(void)
@@ -56,12 +70,12 @@ i386_init(void)
 
 	// Acquire the big kernel lock before waking up APs
 	// Your code here:
-
+	lock_kernel();
 	// Starting non-boot CPUs
 	boot_aps();
 
 	// Start fs.
-	ENV_CREATE(fs_fs, ENV_TYPE_FS);
+	ENV_CREATE(fs_fs, ENV_TYPE_FS);  //crea
 
 #if !defined(TEST_NO_NS)
 	// Start ns.
@@ -73,13 +87,20 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
+//<<<<<<< HEAD
 	ENV_CREATE(user_icode, ENV_TYPE_USER);
+//=======
+	//ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+//>>>>>>> lab4
 #endif // TEST*
 
 	// Should not be necessary - drains keyboard because interrupt has given up.
 	kbd_intr();
 
 	// Schedule and run the first user environment!
+	//cprintf(" we have created the 3 environments \n"); 
 	sched_yield();
 }
 
@@ -133,9 +154,10 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
-
+	lock_kernel();
 	// Remove this after you finish Exercise 4
-	for (;;);
+	sched_yield();
+	//for (;;);
 }
 
 /*

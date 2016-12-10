@@ -36,6 +36,7 @@ block_is_free(uint32_t blockno)
 	return 0;
 }
 
+
 // Mark a block free in the bitmap
 void
 free_block(uint32_t blockno)
@@ -54,6 +55,7 @@ free_block(uint32_t blockno)
 // -E_NO_DISK if we are out of blocks.
 //
 // Hint: use free_block as an example for manipulating the bitmap.
+
 int
 alloc_block(void)
 {
@@ -62,7 +64,18 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	
+	int i; 
+	for (i = 0; i  < super->s_nblocks; i++)  // i =3
+	{
+		if (block_is_free(i))   // if 1 is returned, it means it is free
+		{
+			bitmap[i/ 32] &= ~(1 << (i% 32));  // mark that particular block as used/allocated
+			//flush_block(diskaddr(2));  
+			flush_block(bitmap);	
+			return i; 
+		}
+	}
 	return -E_NO_DISK;
 }
 
@@ -76,8 +89,13 @@ check_bitmap(void)
 	uint32_t i;
 
 	// Make sure all bitmap blocks are marked in-use
+	// here we are only checking if the bitmap block is free, which could be one block or more depends on the disk size 
 	for (i = 0; i * BLKBITSIZE < super->s_nblocks; i++)
+	{
+		//cprintf("  %x\n ", i);  only checks 0 bcz our disk size is small
+		//cprintf(" %d\n ", super->s_nblocks); // we have 1024 blocks in our disk 
 		assert(!block_is_free(2+i));
+	}
 
 	// Make sure the reserved and root blocks are marked in-use.
 	assert(!block_is_free(0));
@@ -131,13 +149,50 @@ fs_init(void)
 //
 // Analogy: This is like pgdir_walk for files.
 // Hint: Don't forget to clear any block you allocate.
+ 
+
+// this function will store the address where the file block number is stored, this will be stored in **ppdiskbno
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-       // LAB 5: Your code here.
-       panic("file_block_walk not implemented");
+	int r; 
+        // LAB 5: Your code here.
+		uint32_t blkno;
+
+	if (filebno < NDIRECT)    // if it is a direct block
+		*ppdiskbno = &f->f_direct[filebno];
+
+
+	else if (filebno < (NDIRECT + NINDIRECT))  // if it is in the indirect block
+		{
+		if((f->f_indirect != 0))                             // if  an indirect block already exists 
+			*ppdiskbno = (uint32_t *)&f->f_indirect+filebno - NDIRECT;
+		else  // if an indirect block doesn't exist
+			{
+
+			if( (alloc==true))   // create an indirect block
+				{
+				if((r=alloc_block())<0)
+					return  -E_NO_DISK;
+				
+				f->f_indirect= r;
+				memset(diskaddr(r),0,BLKSIZE);
+			   *ppdiskbno=(uint32_t *)&f->f_indirect+filebno - NDIRECT;
+
+				}
+			
+			else      // if allocate is false 
+				return -E_NOT_FOUND;
+			}
+		} 
+	else    // thre file block number is too big to be in the file!
+		return -E_INVAL;
+
+	return 0; // return 0 on success
 }
 
+
+//
 // Set *blk to the address in memory where the filebno'th
 // block of file 'f' would be mapped.
 //
@@ -146,17 +201,36 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 //	-E_INVAL if filebno is out of range.
 //
 // Hint: Use file_block_walk and alloc_block.
+
+
+// this func will store in *blk the address to the disk block
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
-       // LAB 5: Your code here.
-       panic("file_get_block not implemented");
+     // LAB 5: Your code here.
+
+	uint32_t *blkno;
+	int r;
+
+	if ((r = file_block_walk(f, filebno, &blkno, 1)) < 0)  
+			return r;    // if it faile, return the error 
+	
+
+	if (*blkno == 0) 
+	{
+		if ((r = alloc_block()) < 0)
+			return r;
+		else
+			*blkno = r;   // store the block number
+		
+	}
+
+	*blk = (char *) diskaddr(*blkno); // store the address that points to the block such as diskaddr(4)
+	return 0;
+
 }
 
-// Try to find a file named "name" in dir.  If so, set *file to it.
-//
-// Returns 0 and sets *file on success, < 0 on error.  Errors are:
-//	-E_NOT_FOUND if the file is not found
+
 static int
 dir_lookup(struct File *dir, const char *name, struct File **file)
 {
@@ -261,6 +335,7 @@ walk_path(const char *path, struct File **pdir, struct File **pf, char *lastelem
 			return -E_NOT_FOUND;
 
 		if ((r = dir_lookup(dir, name, &f)) < 0) {
+			cprintf("r in dir walk is %d\n",r);
 			if (r == -E_NOT_FOUND && *path == '\0') {
 				if (pdir)
 					*pdir = dir;

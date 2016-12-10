@@ -51,9 +51,10 @@ static bool serial_exists;
 static int
 serial_proc_data(void)
 {
-	if (!(inb(COM1+COM_LSR) & COM_LSR_DATA))
+	if (!(inb(COM1+COM_LSR) & COM_LSR_DATA))  // comment:  if data not avail
 		return -1;
-	return inb(COM1+COM_RX);
+	//cprintf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,seria\n");
+	return inb(COM1+COM_RX);  // comment : read the rx buffer?
 }
 
 void
@@ -323,7 +324,7 @@ kbd_proc_data(void)
 	uint8_t data;
 	static uint32_t shift;
 
-	if ((inb(KBSTATP) & KBS_DIB) == 0)
+	if ((inb(KBSTATP) & KBS_DIB) == 0)   
 		return -1;
 
 	data = inb(KBDATAP);
@@ -367,6 +368,8 @@ kbd_proc_data(void)
 void
 kbd_intr(void)
 {
+	//cprintf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,kbd\n");
+
 	cons_intr(kbd_proc_data);
 }
 
@@ -416,7 +419,7 @@ cons_getc(void)
 	int c;
 
 	// poll for any pending input characters,
-	// so that this function works even when interrupts are disabled
+	// so that this function works CONSBUFSIZEeven when interrupts are disabled
 	// (e.g., when called from the kernel monitor).
 	serial_intr();
 	kbd_intr();
