@@ -540,11 +540,22 @@ sys_send_packet(const char* va, int len)
 	//if(user_mem_check(curenv, (void *) va, len, PTE_U) != 0)
 		//return -E_INVAL;
 
-	if( (uint32_t) va >= UTOP ) 
+//	if( (uint32_t) va >= UTOP ) 
+//		return -E_INVAL;
+ 	if(user_mem_check(curenv, va, len, PTE_U) != 0)
 		return -E_INVAL;
 	return nic_transmit((void *)va , len);
  }
 
+
+static int
+sys_rcv_packet(char* va, size_t *len) {
+	//if( (uint32_t) va >= UTOP ) 
+	//	return -E_INVAL;
+	if(user_mem_check(curenv, va, *len, PTE_U | PTE_W) != 0)
+		return -E_INVAL;
+	return e1000_receive(va, len);
+}
 
 // Dispatches to the correct kernel function, passing the arguments.
 
@@ -619,6 +630,13 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         case SYS_send_packet : 
         	ret = sys_send_packet((const char*)a1, a2);
        	break; 
+		case SYS_rcv_packet : 
+        	ret = sys_rcv_packet((char*)a1, (size_t*) a2);
+       	break; 
+
+	 
+
+       	
 
 	default: 
 		return -E_INVAL ;

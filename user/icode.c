@@ -1,8 +1,13 @@
 #include <inc/lib.h>
+#include <kern/e1000.h>
+
+			//char buf11[] = " Lab6 is here ............................... MOha" ; 
 
 void
 umain(int argc, char **argv)
 {
+
+	/*
 	int fd, n, r;
 	char buf[512+1];
 
@@ -25,5 +30,23 @@ umain(int argc, char **argv)
 	if ((r = spawnl("/init", "init", "initarg1", "initarg2", (char*)0)) < 0)
 		panic("icode: spawn /init: %e", r);
 
-	cprintf("icode: exiting\n");
+	cprintf("icode: exiting\n");*/
+
+		cprintf("icode: BEGINNING \n");
+		//int r = nic_tx(buf11, 10) ;
+		sys_yield();
+
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+		sys_yield();
+
+		cprintf("icode: Ending \n");
+
+
 }

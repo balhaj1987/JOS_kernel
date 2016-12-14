@@ -4,7 +4,7 @@
 static unsigned int ticks;
 
 void
-time_init(void)
+time_init(void)  //%% called in init.c 
 {
 	ticks = 0;
 }
@@ -15,12 +15,12 @@ void
 time_tick(void)
 {
 	ticks++;
-	if (ticks * 10 < ticks)
-		panic("time_tick: time overflowed");
+	if (ticks * 10 < ticks)                    
+		panic("time_tick: time overflowed");   //%% what is the problem if the timer overflowed??
 }
 
 unsigned int
 time_msec(void)
 {
-	return ticks * 10;
+	return ticks * 10;     //%% this will give us the time elapsed in ms
 }

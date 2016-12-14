@@ -228,8 +228,7 @@ serve_thread(uint32_t a) {
 		break;
 	case NSREQ_SOCKET:
 		r = lwip_socket(req->socket.req_domain, req->socket.req_type,
-				req->socket.req_protocol);
-		break;
+				req->socket.req_protocol);  // req = va which points to the nsipcbuff that was passed. 
 	case NSREQ_INPUT:
 		jif_input(&nif, (void *)&req->pkt);
 		r = 0;
@@ -269,15 +268,16 @@ serve(void) {
 			thread_yield();
 
 		perm = 0;
-		va = get_buffer();
-		reqno = ipc_recv((int32_t *) &whom, (void *) va, &perm);
+		va = get_buffer();  //%% The buffer is several pages starting at address va, right?
+		reqno = ipc_recv((int32_t *) &whom, (void *) va, &perm);  //%% The request has been sent as the value is the type by nsipc()
+		//%% also we are storing the page sent (if any) in the buffer starting at va
 		if (debug) {
 			cprintf("ns req %d from %08x\n", reqno, whom);
 		}
 
 		// first take care of requests that do not contain an argument page
 		if (reqno == NSREQ_TIMER) {
-			process_timer(whom);
+			process_timer(whom);  // will call thread_yield() eventually... 
 			put_buffer(va);
 			continue;
 		}
@@ -298,7 +298,7 @@ serve(void) {
 		args->whom = whom;
 		args->req = va;
 
-		thread_create(0, "serve_thread", serve_thread, (uint32_t)args);
+		thread_create(0, "serve_thread", serve_thread, (uint32_t)args); //%% create a thread and let it run serve_thread()
 		thread_yield(); // let the thread created run
 	}
 }
@@ -323,7 +323,7 @@ umain(int argc, char **argv)
 	if (timer_envid < 0)
 		panic("error forking");
 	else if (timer_envid == 0) {
-		timer(ns_envid, TIMER_INTERVAL);
+		timer(ns_envid, TIMER_INTERVAL); // so the timer environment will know the NS env id 
 		return;
 	}
 

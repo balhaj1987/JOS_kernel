@@ -25,7 +25,7 @@ nsipc(unsigned type)
 	if (debug)
 		cprintf("[%08x] nsipc %d\n", thisenv->env_id, type);
 
-	ipc_send(nsenv, type, &nsipcbuf, PTE_P|PTE_W|PTE_U);
+	ipc_send(nsenv, type, &nsipcbuf, PTE_P|PTE_W|PTE_U); // send an IPC to the NS env, the value will be the request type, also we r sharing a pge (not always)
 	return ipc_recv(NULL, NULL, NULL);
 }
 
@@ -105,11 +105,11 @@ nsipc_recv(int s, void *mem, int len, unsigned int flags)
 int
 nsipc_send(int s, const void *buf, int size, unsigned int flags)
 {
-	nsipcbuf.send.req_s = s;
-	assert(size < 1600);
-	memmove(&nsipcbuf.send.req_buf, buf, size);
-	nsipcbuf.send.req_size = size;
-	nsipcbuf.send.req_flags = flags;
+	nsipcbuf.send.req_s = s; // which socket is sending the packet, right?r
+	assert(size < 1600);    
+	memmove(&nsipcbuf.send.req_buf, buf, size); // copy the data of the packet into the special structure
+	nsipcbuf.send.req_size = size;  // the size of the packet 
+	nsipcbuf.send.req_flags = flags; // not used in this func, right?
 	return nsipc(NSREQ_SEND);
 }
 

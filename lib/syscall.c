@@ -2,7 +2,8 @@
 
 #include <inc/syscall.h>
 #include <inc/lib.h>
-
+int 
+sys_send_packet(const char* va, int len) ;
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
@@ -116,3 +117,16 @@ sys_time_msec(void)
 {
 	return (unsigned int) syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
 }
+
+int 
+sys_send_packet(const char* va, int len) {
+	return syscall(SYS_send_packet, 1, (uint32_t) va, len, 0, 0, 0); 
+}
+
+
+int 
+sys_rcv_packet( char* va, size_t *len) {
+	return syscall(SYS_rcv_packet, 1, (uint32_t) va, (uint32_t) len, 0, 0, 0);
+}
+
+

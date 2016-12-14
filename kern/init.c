@@ -16,6 +16,8 @@
 #include <kern/spinlock.h>
 #include <kern/time.h>
 #include <kern/pci.h>
+#include <kern/e1000.h>
+
 
 static void boot_aps(void);
 
@@ -75,7 +77,7 @@ i386_init(void)
 	boot_aps();
 
 	// Start fs.
-	ENV_CREATE(fs_fs, ENV_TYPE_FS);  //crea
+	ENV_CREATE(fs_fs, ENV_TYPE_FS);  //create
 
 #if !defined(TEST_NO_NS)
 	// Start ns.

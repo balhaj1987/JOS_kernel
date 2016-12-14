@@ -748,7 +748,7 @@ mmio_map_region(physaddr_t pa, size_t size)
     		panic("mmio_map region .... memory is not enough\n");
 	boot_map_region(kern_pgdir,       base,            size,          pa,              PTE_PCD | PTE_PWT |  PTE_W | PTE_P  );
 	uintptr_t addr = base; 
-	base = base + size_r; 
+	base = base + size_r;  // This is basically the virtual address
 
 	return (void *) addr; 
 

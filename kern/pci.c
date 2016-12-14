@@ -31,6 +31,8 @@ struct pci_driver pci_attach_class[] = {
 // pci_attach_vendor matches the vendor ID and device ID of a PCI device. key1
 // and key2 should be the vendor ID and device ID respectively
 struct pci_driver pci_attach_vendor[] = {
+	//{ VENDOR_ID, DEVICE_ID, &pci_nic_attach },
+	{ VENDOR_ID, DEVICE_ID, &pci_nic_attach },
 	{ 0, 0, 0 },
 };
 
@@ -191,6 +193,7 @@ pci_bridge_attach(struct pci_func *pcif)
 void
 pci_func_enable(struct pci_func *f)
 {
+
 	pci_conf_write(f, PCI_COMMAND_STATUS_REG,
 		       PCI_COMMAND_IO_ENABLE |
 		       PCI_COMMAND_MEM_ENABLE |
